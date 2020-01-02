@@ -1,0 +1,525 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.IO;
+using GemBox.Document;
+using System.Net;
+using System.Text.RegularExpressions;
+namespace Projee
+{
+    public partial class Arama : Form
+    {
+        string b;
+        int count;
+        public Arama()
+        {
+            ComponentInfo.SetLicense("FREE-LIMITED-KEY");
+
+           
+            ComponentInfo.FreeLimitReached += (sender, e) => e.FreeLimitReachedAction = FreeLimitReachedAction.Stop;
+            InitializeComponent();
+        }
+
+
+        void hedefAra()
+        {
+            textBox1.Text = linkLabelYaklasim.Text;
+            DirectoryInfo klasor = new DirectoryInfo("klasor\\");
+            //Bu alanda FileInfo tipinde dizi tanımlaması yapılmakta ve klasor içerisinde bulunan tüm txt, docx, pdf, ve html dosyaları ilgili
+            // files1-2-3-4 isimli dizilere atılmaktadır. Bu diziler üzerinde aramalar gerçekleştirilecektir. 
+            FileInfo[] files1 = klasor.GetFiles("*.txt");
+            FileInfo[] files2 = klasor.GetFiles("*.docx");
+            FileInfo[] files3 = klasor.GetFiles("*.pdf");
+            FileInfo[] files4 = klasor.GetFiles("*.html");
+            // StreamWriter ve StreamReader metin, pdf, html gibi dosyalarda okuma ve yazma yapar. 
+            //StreamWriter burada hedef isimli nesne türeterek yaz.txt dosyasına yazma işlemi yapacaktır. 
+            StreamWriter hedef = new StreamWriter("yaz.txt");
+            
+            //TXT FORMATINDAKİ DOSYALARI OKUMA VE ARANAN İFADENİN VAR OLUP OLMADIĞININ KONTROL İŞLEMİ 
+
+            for (int i = 0; i < files1.Length; i++)
+            {
+                StreamReader kaynak = new StreamReader("klasor\\" + files1[i]);
+                string line;
+
+                while (kaynak.EndOfStream == false)
+                {
+                    line = kaynak.ReadLine().ToLower();
+                    if (line.Contains((textBox1.Text).ToLower()))
+                    {
+                        hedef.WriteLine(files1[i] + " " + line.ToString() + DateTime.Now);
+                    }
+                }
+            }
+
+            //DOCX FORMATINDAKİ DOSYALARI OKUMA VE ARANAN İFADENİN VAR OLUP OLMADIĞININ KONTROL İŞLEMİ
+
+            for (int i = 0; i < files2.Length; i++)
+            {
+                StreamReader kaynak = new StreamReader("klasor\\" + files2[i]);
+                var document = DocumentModel.Load(files2[i].FullName);
+                string text = document.Content.ToString();
+                String[] lineArray = text.Split('.');  //Nokta kontrolü ile cümleler için String dizisi tanımlandı
+                foreach (string line in lineArray) //cümleleri alıyor
+                {
+                    string[] text1 = line.Split(' ');
+
+                    count = 0;
+                    //StringBuilder sınıfı ile sb isminde karakter sınırı olmayan bir nesne tanımlandı.
+                    //StringBuilder sınıfından tanımlanan (sb )nesneye eklenen karakter sayısının artmasına izin veren dinamik bir nesnedir
+                    StringBuilder sb = new StringBuilder();
+                    for (int x = 0; x < text1.Length; x++) // kelimeleri alıyor
+                    {
+                        sb.Clear();
+                        foreach (char c in text1[x]) //kelimeleri özel karakterlerden temizliyor
+                        {
+                            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+                            {
+                                sb.Append(c);
+                            }
+                        }
+
+                        string source = textBox1.Text.ToLower();
+                        string target = sb.ToString().ToLower();
+
+                        //Aradaki fark 1 ise yaklaşık kelime bulunmuştur. İstenirse bu değerler arttırılarak genişletilebilir.
+                        if (bul(source, target) == 1) //yaklaşık kelimeyi bulma 
+                        {
+                            b = target;
+                            linkLabelYaklasim.Text = b;
+                            label1.Text = " bunu mu denemek istediniz";
+                        }
+
+                        if (sb.ToString().ToLower() == textBox1.Text.ToLower())
+                        {
+                            count++;
+                        }
+
+                    }
+                    //Eğer arama işleminde her hangi bir eşleştirme işlemi gerçekleşmişse ve true dönmüşse/0 dan büyükse dönen değer
+                    // iligili arama sonucunu yaz.txt dosyasına yazma işlemini gerçekleştiren hedef isimli nesnenin yazma işlemi gerçekleşir.
+                    if (count > 0)
+                    {
+                        hedef.WriteLine(files2[i] + " " + line.ToString() + DateTime.Now);
+
+                    }
+                    }
+            }
+
+            //PDF FORMATINDAKİ DOSYALARI OKUMA VE ARANAN İFADENİN VAR OLUP OLMADIĞININ KONTROL İŞLEMİ
+            for (int i = 0; i < files3.Length; i++)
+            {
+                StreamReader kaynak = new StreamReader("klasor\\" + files3[i]);
+
+                var document = DocumentModel.Load(files3[i].FullName);
+
+                string text = document.Content.ToString();
+
+                String[] lineArray = text.Split('.');
+
+                foreach (string line in lineArray)
+                {
+                    string[] text1 = line.Split(' ');
+
+                    int count = 0;
+
+                    StringBuilder sb = new StringBuilder();
+                    for (int x = 0; x < text1.Length; x++)
+                    {
+                        sb.Clear();
+                        foreach (char c in text1[x])
+                        {
+                            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+                            {
+                                sb.Append(c);
+                            }
+                        }
+
+                        string source = textBox1.Text.ToString().ToLower();
+                        string target = sb.ToString().ToLower();
+
+
+                        if (bul(source, target) == 1)
+                        {
+                            b = target;
+                            linkLabelYaklasim.Text = b;
+                            //label1.Text = b + " bunu mu denemek istediniz";
+                            label1.Text = " bunu mu denemek istediniz";
+                        }
+
+                        if (sb.ToString().ToLower() == textBox1.Text.ToLower())
+                        {
+                            count++;
+                        }
+
+                    }
+                    if (count > 0)
+                    {
+
+                        hedef.WriteLine(files3[i] + " " + line.ToString() + DateTime.Now);
+
+                    }
+                }
+
+                //HTML FORMATINDAKİ DOSYALARI OKUMA VE ARANAN İFADENİN VAR OLUP OLMADIĞININ KONTROL İŞLEMİ
+                for (int m = 0; m < files4.Length; m++)
+                {
+
+                    StreamReader reader = new StreamReader("klasor\\" + files4[m]);
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        line = RemoveAllTags(line);           // Etiketler kaldırılıyor
+                        line = RemoveDoubleNewLines(line);    //  Birden fazla satır bırakılmışsa bu boş satırlar kaldırılıyor
+                        line = TrimNewLines(line);            //  Alt Satır  Boşlukları kaldırılıyor
+                        line = line.Trim();                   // Satır sonu boşluklar kaldırılıyor. 
+                        string[] text1 = line.Split(' ');     // Satırdaki boşluklar sayesinde satırı kelimelerine ayırıyor.
+
+                        count = 0;
+
+                        StringBuilder sb = new StringBuilder();
+                        for (int x = 0; x < text1.Length; x++)
+                        {
+                            sb.Clear();
+                            foreach (char c in text1[x])
+                            {
+                                if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+                                {
+                                    sb.Append(c);
+                                }
+                            }
+
+                            string source = textBox1.Text.ToString().ToLower();
+                            string target = sb.ToString().ToLower();
+
+                            if (bul(source, target) == 1)
+                            {
+                                b = target;
+                                linkLabelYaklasim.Text = b;
+                                label1.Text = " bunu mu denemek istediniz";
+                            }
+
+                            if (sb.ToString().ToLower() == textBox1.Text.ToLower())
+                            {
+                                count++;
+                            }
+
+                        }
+      if (count > 0)
+                        {
+                            hedef.WriteLine(files4[i] + " " + line.ToString() + DateTime.Now);
+                        }
+
+                    }
+                }
+                hedef.Close();
+
+                //sonuçların yazılı olduğu dosyayı otomatik açar
+                string makine;
+                makine = @"yaz.txt";
+                System.Diagnostics.Process.Start(makine);
+            }
+
+        }
+
+
+        //bu projede lineer algoritma kullandım
+        private void button1_Click(object sender, EventArgs e)
+        {
+            //DirectoryInfo classı ile klasor isminde harddiskte bulunan klasor isimli klasorun 
+            //bilgisini tutan bir nesne tanımlandı.
+            DirectoryInfo klasor = new DirectoryInfo("klasor\\");
+            FileInfo[] files1 = klasor.GetFiles("*.txt");
+            FileInfo[] files2 = klasor.GetFiles("*.docx");
+            FileInfo[] files3 = klasor.GetFiles("*.pdf");
+            FileInfo[] files4 = klasor.GetFiles("*.html");
+            StreamWriter hedef = new StreamWriter("yaz.txt");
+            //StreamWriter hedef = new StreamWriter("klasor\\yaz.txt");
+            //txt dosyalarını okuma
+            for (int i = 0; i < files1.Length; i++)
+            {
+                StreamReader kaynak = new StreamReader("klasor\\" + files1[i]);
+                string line;
+
+                while (kaynak.EndOfStream == false)  //dosya sonuna kadar okuma işlemi için
+                {
+                    line = kaynak.ReadLine().ToLower();
+                    if (line.Contains((textBox1.Text).ToLower())) // textBox1 de yazılan ve aranmak istenen ifade line satır içeriyormu kontrol ediliyor
+                    {
+                        //Eğer varsa bu dosyanın adı, ilgili satır ve bulma zaman bilgisi dosyaya yazılıyor.
+                        hedef.WriteLine(files1[i] + " " + line.ToString() + DateTime.Now);
+                    }
+                }
+            }
+    //docx formatı
+            for (int i = 0; i < files2.Length; i++)
+            {
+                TextReader kaynak = new StreamReader("klasor\\" + files2[i]);
+                var document = DocumentModel.Load(files2[i].FullName);
+                string text = document.Content.ToString();
+                String[] lineArray = text.Split('.');
+                foreach (string line in lineArray) //cümleleri alıyor
+                {
+                    string[] text1 = line.Split(' ');
+
+                    count = 0;
+                    StringBuilder sb = new StringBuilder();
+                    for (int x = 0; x < text1.Length; x++) // kelimeleri alıyor
+                    {
+                        sb.Clear();
+                        foreach (char c in text1[x]) //kelimeleri özel karakterlerden temizliyor
+                        {
+                            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+                            {
+                                sb.Append(c);
+                            }
+                        }
+
+                        string source = textBox1.Text.ToLower();
+                        string target = sb.ToString().ToLower();
+                       
+                        if (bul(source,target) == 1) //yaklaşık kelimeyi bulma
+                        {
+                            b = target;
+                            linkLabelYaklasim.Text = b;
+                            //label1.Text = b + " bunu mu denemek istediniz";
+                            label1.Text = " bunu mu denemek istediniz";
+
+                        }
+
+                        if(sb.ToString().ToLower()==textBox1.Text.ToLower())
+                        {
+                            count++;
+                        }
+
+                    }
+                  
+                if (count > 0)
+                {
+                    hedef.WriteLine(files2[i] + " " + line.ToString() + DateTime.Now);
+                    
+                }}
+            }
+
+            //pdf için
+            for (int i = 0; i < files3.Length; i++)
+            {
+                StreamReader kaynak = new StreamReader("klasor\\" + files3[i]);
+
+                var document = DocumentModel.Load(files3[i].FullName);
+
+                string text = document.Content.ToString();
+
+                String[] lineArray = text.Split('.');
+
+                foreach (string line in lineArray)
+                {
+                    string[] text1 = line.Split(' ');
+
+                    int count = 0;
+
+                    StringBuilder sb = new StringBuilder();
+                    for (int x = 0; x < text1.Length; x++)
+                    {
+                        sb.Clear();
+                        foreach (char c in text1[x])
+                        {
+                            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+                            {
+                                sb.Append(c);
+                            }
+                        }
+                        
+                        string source = textBox1.Text.ToString().ToLower();
+                        string target = sb.ToString().ToLower();
+                        
+
+                        if (bul(source,target) == 1)
+                        {
+                            b = target;
+                            linkLabelYaklasim.Text = b;
+                            //label1.Text = b + " bunu mu denemek istediniz";
+                            label1.Text = " bunu mu denemek istediniz";
+                        }
+
+                        if (sb.ToString().ToLower() == textBox1.Text.ToLower())
+                        {
+                            count++;
+                        }
+                        
+                    }if (count > 0)
+                        {
+                           
+                            hedef.WriteLine(files3[i] + " " + line.ToString() + DateTime.Now);
+                            
+                        }
+                }
+
+                //html için
+                for (int m = 0; m < files4.Length; m++)
+                {
+
+                    StreamReader reader = new StreamReader("klasor\\" + files4[m]);
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        line = RemoveAllTags(line);
+                        line = RemoveDoubleNewLines(line);
+                        line = TrimNewLines(line);
+                        line = line.Trim();
+                        string[] text1 = line.Split(' ');
+
+                        count = 0;
+
+                        StringBuilder sb = new StringBuilder();
+                        for (int x = 0; x < text1.Length; x++)//because name is already stored at the first index (0), that can only mean that the entire tweet is stored
+  {
+                            sb.Clear();
+                            foreach (char c in text1[x])
+                            {
+                                if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+                                {
+                                    sb.Append(c);
+                                }
+                            }
+
+                            string source = textBox1.Text.ToString().ToLower();
+                            string target = sb.ToString().ToLower();
+
+                            if (bul(source, target) == 1)
+                            {
+                                b = target;
+                                linkLabelYaklasim.Text = b;
+                                //label1.Text = b + " bunu mu denemek istediniz";
+                                label1.Text = " bunu mu denemek istediniz";
+                            }
+
+                            if (sb.ToString().ToLower() == textBox1.Text.ToLower())
+                            {
+                                count++;
+                            }
+
+                        }
+                      
+                        if (count > 0)
+                        {
+                            hedef.WriteLine(files4[i] + " " + line.ToString() + DateTime.Now);
+                        }
+
+                    }
+                    }
+                hedef.Close();
+
+               
+            }
+            //sonuçların yazılı olduğu dosyayı otomatik açar
+            string makine;
+            makine = @"yaz.txt";
+            System.Diagnostics.Process.Start(makine);
+        }
+
+  //yaklaşık kelimeyi bulan Levenshtein distance algorithm
+        //https://www.dotnetperls.com/levenshtein ilgili kaynaktan yararlanılmıştır.
+        //Levenshtein distance algorithm incelenmiş yaklaşık kelime için uygun olduğu görülmüştür.
+        // Burada hedef ve kaynak kelimelerinin uzunluğu alınıp, bu uzunluğa göre matris oluşturuyor
+        //bu matrisler sonucunda tüm harfler tek tek karşılaştırılıyor. ve bu işlem sonucuna göre farklılıklara göre
+        //birbirine benzerlik mesafesi/uzunluğu ölçülüyor.
+        //buton içerisinde yazılan   ***** if (bul(source, target) == 1) ******  ifadesi ile istediğimiz ayarı yapabiliyoruz.
+        //burada ben 1 harf farklılığına göre işlem yaptım bu sayı değiştirilerecek farklı yaklaşımlar elde edilebilir.
+        public int bul(string source,string target)
+        {
+            
+            //Adım 1
+            int sourceWordCount = source.Length; // kaynak  kaynak kelime uzunluğu alınıyor
+            int targetWordCount = target.Length;  // hedef kelime uzunluğu alınıyor
+            
+            //bu uzunluklara göre iki boyutlu matris tanımlanıyor
+            int[,] distance = new int[sourceWordCount + 1, targetWordCount + 1]; 
+
+            // Adım 2
+            //kaynaktaki bir harf ile hedefdeki tüm harfler karşılaştırılıyor
+            
+            for (int ki = 0; ki <= sourceWordCount; distance[ki, 0] = ki++) ;
+            for (int kj = 0; kj <= targetWordCount; distance[0, kj] = kj++) ;
+
+            for (int ki = 1; ki <= sourceWordCount; ki++)
+            {
+                for (int kj = 1; kj <= targetWordCount; kj++)
+                {
+                    // Adım 3
+                    int cost = (target[kj - 1] == source[ki - 1]) ? 0 : 1;
+
+                    // Adım 4
+                    distance[ki, kj] = Math.Min(Math.Min(distance[ki - 1, kj] + 1, distance[ki, kj - 1] + 1), distance[ki - 1, kj - 1] + cost);
+                }
+            }
+            return distance[sourceWordCount, targetWordCount];
+        }
+
+        //Özel karakter kaldırma metedou
+        private static string RemoveAllTags(string str)
+
+        {
+            //özel karakterleri tag leri kaldırıyor
+            string strWithoutTags = Regex.Replace(str, "<[^>]*>", "\n");
+
+            return strWithoutTags;
+
+        }
+
+        //Satırları kaldırma metadodu
+        private static string RemoveDoubleNewLines(string str)
+
+        {
+            string pattern = "[\n]+";
+            return Regex.Replace(str, pattern, "\n");
+
+        }
+
+        //Boş satırları kaldırma metodu
+        //Satır sonundaki boşlukları kaldırma metodu
+        private static string TrimNewLines(string str)
+
+        {
+
+            int start = 0;
+            while (start < str.Length && str[start] == '\n')
+            {
+                start++;
+
+            }
+
+            int end = str.Length - 1;
+
+            while (end >= 0 && str[end] == '\n')
+
+            {
+
+                end--;
+
+            }
+            
+            if (start > end)
+
+            {
+                return string.Empty;
+            }
+
+            string trimmed = str.Substring(start, end - start + 1);
+
+            return trimmed;
+
+        }
+
+        private void linkLabelYaklasim_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            hedefAra();
+        }
+    }
+    }
